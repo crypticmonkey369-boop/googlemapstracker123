@@ -234,7 +234,8 @@ async function scrapeGoogleMaps(category, state, country, maxLeads = 100, onProg
 
         return results;
     } catch (error) {
-        console.error('Scraping error:', error.message);
+        console.error('CRITICAL SCRAPING ERROR:', error.message);
+        console.error('Stack:', error.stack);
         throw error;
     } finally {
         if (browser) {
