@@ -22,7 +22,7 @@ async function scrapeGoogleMaps(category, state, country, maxLeads = 100, onProg
         onProgress({ status: 'launching', message: 'Launching browser...' });
 
         browser = await puppeteer.launch({
-            headless: 'new',
+            headless: true,
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',

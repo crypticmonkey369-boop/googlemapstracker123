@@ -3,4 +3,4 @@
 set -o errexit
 
 npm install
-npx puppeteer install
+npx puppeteer install --cache /opt/render/project/puppeteer

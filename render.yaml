@@ -8,3 +8,5 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 18.0.0
+      - key: PUPPETEER_CACHE_DIR
+        value: /opt/render/project/puppeteer
