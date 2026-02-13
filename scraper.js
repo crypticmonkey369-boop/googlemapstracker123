@@ -13,13 +13,14 @@ async function scrapeGoogleMaps(category, state, country, maxLeads = 100, onProg
     const MAX_LEADS = Math.min(Math.max(parseInt(maxLeads, 10) || 100, 1), 100);
 
     const query = `${category} in ${state}, ${country}`;
-    const searchUrl = `https://www.google.com/maps/search/${encodeURIComponent(query)}`;
+    // Force English UI for consistent selectors
+    const searchUrl = `https://www.google.com/maps/search/${encodeURIComponent(query)}?hl=en`;
 
     let browser;
     const results = [];
 
     try {
-        onProgress({ status: 'launching', message: 'Launching browser...' });
+        onProgress({ status: 'launching', message: 'Launching global scraper engine...' });
 
         browser = await puppeteer.launch({
             headless: true,
@@ -29,235 +30,195 @@ async function scrapeGoogleMaps(category, state, country, maxLeads = 100, onProg
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--disable-gpu',
                 '--window-size=1920,1080',
-                '--lang=en-US',
+                '--lang=en-US,en;q=0.9',
             ],
         });
 
         const page = await browser.newPage();
-
-        await page.setUserAgent(
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        );
-
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
         await page.setViewport({ width: 1920, height: 1080 });
 
-        onProgress({ status: 'navigating', message: `Searching Google Maps for "${query}"...` });
+        onProgress({ status: 'navigating', message: `Searching for "${category}" in "${state}"...` });
 
-        await page.goto(searchUrl, { waitUntil: 'networkidle2', timeout: 60000 });
+        // Go to page with longer timeout
+        await page.goto(searchUrl, { waitUntil: 'networkidle2', timeout: 90000 });
+        await delay(5000); // Give it a moment to settle
 
-        // Wait for results to load
-        await delay(3000);
-
-        // Try to accept cookies if prompted
+        // Handle Cookie Consent (Crucial on cloud IPs)
         try {
-            const acceptBtn = await page.$('button[aria-label="Accept all"]');
-            if (acceptBtn) {
-                await acceptBtn.click();
-                await delay(1000);
+            const consentSelectors = [
+                'button[aria-label="Accept all"]',
+                'button[aria-label="Accept everything"]',
+                'form[action^="https://consent.google.com"] button',
+                'button.VfPpkd-LgIVId-L9o7Wf'
+            ];
+            for (const sel of consentSelectors) {
+                const btn = await page.$(sel);
+                if (btn) {
+                    await btn.click();
+                    await delay(2000);
+                    break;
+                }
             }
         } catch (e) {
-            // Cookies prompt not found, continue
+            console.log("Consent skip or not found");
         }
 
-        onProgress({ status: 'scrolling', message: 'Loading business listings...' });
+        onProgress({ status: 'scrolling', message: 'Detecting Google Maps results layout...' });
 
-        // Find the scrollable results panel - try multiple known selectors
-        const scrollableSelectors = [
-            'div[role="feed"]',
-            'div.m67qEc',
-            'div[aria-label^="Results for"]',
-            '.section-scrollbox'
-        ];
-
-        let scrollableSelector = null;
-        for (const selector of scrollableSelectors) {
-            const exists = await page.$(selector);
-            if (exists) {
-                scrollableSelector = selector;
-                break;
-            }
-        }
-
-        // Wait for results to load
-        if (scrollableSelector) {
-            await page.waitForSelector(scrollableSelector, { timeout: 15000 }).catch(() => null);
-        }
-
-        // Scroll to load more results
+        // Scrolling Logic
         let previousCount = 0;
         let scrollAttempts = 0;
-        const maxScrollAttempts = 20;
+        const maxScrollAttempts = 25;
 
         while (scrollAttempts < maxScrollAttempts) {
-            // Scroll the results panel or the body if panel not found
-            await page.evaluate((selector) => {
-                const el = selector ? document.querySelector(selector) : null;
-                if (el) {
-                    el.scrollTop = el.scrollHeight;
+            // Try scrolling the feed area
+            await page.evaluate(() => {
+                const feed = document.querySelector('div[role="feed"]') ||
+                    document.querySelector('.m67qEc') ||
+                    document.querySelector('.section-scrollbox') ||
+                    window;
+
+                if (feed === window) {
+                    window.scrollBy(0, 1000);
                 } else {
-                    window.scrollBy(0, 500);
+                    feed.scrollTop = feed.scrollHeight;
                 }
-            }, scrollableSelector);
-
-            await delay(2000 + Math.random() * 1000);
-
-            // Count current results - use a more robust selector for links
-            const currentCount = await page.evaluate(() => {
-                const links = document.querySelectorAll('a[href*="/maps/place/"]');
-                return Array.from(links).length;
             });
 
+            await delay(2500);
+
+            // Robust link extraction
+            const currentLinks = await page.evaluate(() => {
+                // Link patterns: search for anchors containing place info
+                const selectors = [
+                    'a[href*="/maps/place/"]',
+                    'a.hfpxzc',
+                    'div.Nv2Ybe a',
+                    '[role="article"] a'
+                ];
+
+                const links = new Set();
+                selectors.forEach(sel => {
+                    document.querySelectorAll(sel).forEach(a => {
+                        if (a.href && a.href.includes('/maps/place/')) {
+                            links.add(a.href);
+                        }
+                    });
+                });
+                return Array.from(links);
+            });
+
+            const currentCount = currentLinks.length;
             onProgress({
                 status: 'scrolling',
-                message: `Found ${currentCount} listings so far... (max ${MAX_LEADS})`,
+                message: `Found ${currentCount} business listings...`,
                 count: currentCount,
             });
 
-            // Stop if we've reached the limit
             if (currentCount >= MAX_LEADS) break;
 
-            // Check if we've stopped finding new results
             if (currentCount === previousCount) {
                 scrollAttempts++;
-                if (scrollAttempts >= 5) break; // More attempts before giving up
+                if (scrollAttempts >= 5) break;
             } else {
                 scrollAttempts = 0;
             }
-
             previousCount = currentCount;
 
-            // Check for "end of results" indicator
-            const endOfResults = await page.evaluate(() => {
-                const text = document.body.innerText;
-                const endphrases = [
-                    "You've reached the end of the list",
-                    "No more results",
-                    "End of the list"
-                ];
-                return endphrases.some(phrase => text.includes(phrase));
+            // Check if end reached
+            const isEnd = await page.evaluate(() => {
+                return document.body.innerText.includes("reached the end") ||
+                    document.body.innerText.includes("No more results");
             });
-
-            if (endOfResults) break;
+            if (isEnd) break;
         }
 
-        onProgress({ status: 'extracting', message: 'Extracting business details...' });
-
-        // Get all listing links (capped at MAX_LEADS)
+        // Final Extraction Phase
         let listingLinks = await page.evaluate(() => {
-            const items = document.querySelectorAll('a[href*="/maps/place/"]');
-            return Array.from(items)
-                .map((a) => a.href)
-                .filter((href) => href && href.includes('/maps/place/'));
+            const links = new Set();
+            document.querySelectorAll('a[href*="/maps/place/"]').forEach(a => links.add(a.href));
+            return Array.from(links);
         });
 
-        // Deduplicate links
-        listingLinks = [...new Set(listingLinks)];
         listingLinks = listingLinks.slice(0, MAX_LEADS);
+
+        if (listingLinks.length === 0) {
+            throw new Error("Google Maps returned 0 results for this area. Try a broader category.");
+        }
 
         onProgress({
             status: 'extracting',
-            message: `Found ${listingLinks.length} listings (limit: ${MAX_LEADS}). Extracting details...`,
+            message: `Extracting detailed info for ${listingLinks.length} businesses...`,
             total: listingLinks.length,
         });
 
-        // Visit each listing to extract details
         for (let i = 0; i < listingLinks.length; i++) {
             try {
                 onProgress({
                     status: 'extracting',
-                    message: `Extracting business ${i + 1} of ${listingLinks.length}...`,
+                    message: `Detailing ${i + 1} of ${listingLinks.length}: ${listingLinks[i].split('/')[5]?.replace(/\+/g, ' ')}`,
                     current: i + 1,
                     total: listingLinks.length,
                 });
 
-                await page.goto(listingLinks[i], { waitUntil: 'networkidle2', timeout: 20000 });
-                await delay(1500 + Math.random() * 1000);
+                await page.goto(listingLinks[i], { waitUntil: 'networkidle2', timeout: 30000 });
+                await delay(2000);
 
                 const businessData = await page.evaluate((cat) => {
                     const data = {
                         category: cat,
-                        name: '',
+                        name: document.querySelector('h1')?.textContent?.trim() || 'Unknown',
                         address: '',
                         phone: '',
-                        email: '',
                         website: '',
                         rating: '',
                         reviews: '',
                     };
 
-                    // Business name
-                    const nameEl = document.querySelector('h1');
-                    if (nameEl) data.name = nameEl.textContent.trim();
+                    // Scrape Rating
+                    const ratingSpan = document.querySelector('span[role="img"][aria-label*="stars"]');
+                    if (ratingSpan) data.rating = ratingSpan.getAttribute('aria-label').split(' ')[0];
 
-                    // Rating and Reviews
-                    const ratingEl = document.querySelector('span[role="img"][aria-label*="stars"]');
-                    if (ratingEl) {
-                        data.rating = ratingEl.getAttribute('aria-label').split(' ')[0];
-                    }
+                    // Scrape Reviews count
                     const reviewsBtn = document.querySelector('button[aria-label*="reviews"]');
-                    if (reviewsBtn) {
-                        data.reviews = reviewsBtn.getAttribute('aria-label').replace(/[^0-9]/g, '');
-                    }
+                    if (reviewsBtn) data.reviews = reviewsBtn.getAttribute('aria-label').replace(/[^0-9]/g, '');
 
-                    // Extract from info buttons/links
-                    const buttons = document.querySelectorAll('button[data-item-id]');
-                    buttons.forEach((btn) => {
-                        const itemId = btn.getAttribute('data-item-id');
-                        const text = btn.textContent.trim();
-                        const ariaLabel = btn.getAttribute('aria-label') || '';
+                    // Helper to find data by icon/type
+                    const infoButtons = document.querySelectorAll('button[data-item-id]');
+                    infoButtons.forEach(btn => {
+                        const id = btn.getAttribute('data-item-id');
+                        const label = btn.getAttribute('aria-label') || '';
 
-                        if (itemId === 'address' || itemId?.startsWith('address')) {
-                            data.address = ariaLabel.replace('Address: ', '') || text;
-                        }
-                        if (itemId === 'phone' || itemId?.startsWith('phone')) {
-                            data.phone = ariaLabel.replace('Phone: ', '') || text;
+                        if (id?.includes('address')) data.address = label.replace('Address: ', '');
+                        if (id?.includes('phone')) data.phone = label.replace('Phone: ', '');
+                        if (id?.includes('authority')) {
+                            const link = btn.querySelector('a');
+                            if (link) data.website = link.href;
                         }
                     });
 
-                    // Try to get address from aria-label
-                    if (!data.address) {
-                        const addressBtn = document.querySelector('button[data-item-id="address"]') ||
-                            document.querySelector('[data-tooltip="Copy address"]');
-                        if (addressBtn) {
-                            data.address = addressBtn.getAttribute('aria-label')?.replace('Address: ', '') ||
-                                addressBtn.textContent.trim();
-                        }
-                    }
-
-                    // Try to get phone from aria-label
-                    if (!data.phone) {
-                        const phoneBtn = document.querySelector('button[data-item-id^="phone"]') ||
-                            document.querySelector('[data-tooltip="Copy phone number"]');
-                        if (phoneBtn) {
-                            data.phone = phoneBtn.getAttribute('aria-label')?.replace('Phone: ', '') ||
-                                phoneBtn.textContent.trim();
-                        }
-                    }
-
-                    // Website
-                    const websiteLink = document.querySelector('a[data-item-id="authority"]') ||
-                        document.querySelector('[data-tooltip="Open website"]');
-                    if (websiteLink) {
-                        data.website = websiteLink.href || websiteLink.textContent.trim();
+                    // Fallback for website
+                    if (!data.website) {
+                        const webLink = document.querySelector('a[data-item-id="authority"]');
+                        if (webLink) data.website = webLink.href;
                     }
 
                     return data;
                 }, category);
 
-                if (businessData.name) {
+                if (businessData.name !== 'Unknown') {
                     results.push(businessData);
                 }
             } catch (err) {
-                console.log(`Failed to extract listing ${i + 1}: ${err.message}`);
+                console.log(`Skip listing ${i}: ${err.message}`);
             }
         }
 
         onProgress({
             status: 'complete',
-            message: `Successfully extracted ${results.length} businesses`,
+            message: `Scraping finished! ${results.length} leads are ready.`,
             count: results.length,
         });
 
