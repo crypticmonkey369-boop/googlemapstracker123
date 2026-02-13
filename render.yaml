@@ -1,5 +1,12 @@
 services:
   - type: web
     name: google-maps-scraper-app-d4ly
-    runtime: docker
+    runtime: node
     plan: free
+    buildCommand: npm install && npx puppeteer install
+    startCommand: npm start
+    envVars:
+      - key: PUPPETEER_CACHE_DIR
+        value: /opt/render/project/src/.cache/puppeteer
+      - key: NODE_VERSION
+        value: 20.0.0

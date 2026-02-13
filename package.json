@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "build": "./render-build.sh"
+    "build": "bash ./render-build.sh"
   },
   "dependencies": {
     "cors": "^2.8.5",
