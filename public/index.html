@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LeadScraper — Turn Google Maps into your Lead Machine</title>
+  <meta name="description"
+    content="Scrape Google Maps listings by business category, state, and country. Export validated leads to Excel in one click.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <!-- Navigation -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+            <circle cx="12" cy="10" r="3" />
+          </svg>
+        </div>
+        <span class="logo-text">Lead<span class="logo-accent">Scraper</span></span>
+      </a>
+      <div class="nav-links">
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#scraper" class="nav-link">Scraper</a>
+        <a href="#" class="nav-link nav-cta">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero" id="hero">
+    <div class="hero-bg-shapes">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <div class="shape shape-3"></div>
+    </div>
+    <div class="hero-container">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        Powered by AI-driven scraping
+      </div>
+      <h1 class="hero-title">
+        Turn Google Maps into<br>
+        your <span class="gradient-text">Lead Machine</span>
+      </h1>
+      <p class="hero-subtitle">
+        Extract verified business leads from Google Maps in seconds. Get names, addresses,
+        phone numbers, emails, and websites — all exported to a clean Excel file.
+      </p>
+      <a href="#scraper" class="hero-cta">
+        Start Scraping Now
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="cta-arrow">
+          <path d="M5 12h14M12 5l7 7-7 7" />
+        </svg>
+      </a>
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-number">10K+</span>
+          <span class="stat-label">Leads Scraped</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-number">50+</span>
+          <span class="stat-label">Categories</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-number">99%</span>
+          <span class="stat-label">Accuracy</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="features" id="features">
+    <div class="features-container">
+      <div class="features-header">
+        <span class="section-tag">Features</span>
+        <h2 class="section-title">Everything you need to generate leads</h2>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon icon-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
+            </svg>
+          </div>
+          <h3>Smart Scraping</h3>
+          <p>Automatically extracts business data from Google Maps with intelligent pagination and scroll handling.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon icon-shield">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12l2 2 4-4" />
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+          </div>
+          <h3>Data Validation</h3>
+          <p>Removes duplicates, validates entries, and normalizes phone numbers and URLs automatically.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon icon-download">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="12" y1="18" x2="12" y2="12" />
+              <polyline points="9 15 12 18 15 15" />
+            </svg>
+          </div>
+          <h3>Excel Export</h3>
+          <p>One-click export to professional Excel files with separate sheets per business category.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scraper Section -->
+  <section class="scraper-section" id="scraper">
+    <div class="scraper-container">
+      <!-- Input Form -->
+      <div class="scraper-card" id="scraper-card">
+        <div class="card-header">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+          </div>
+          <h2 class="card-title">Scrape Google Maps</h2>
+          <p class="card-subtitle">Enter a business category and location to start extracting leads</p>
+        </div>
+
+        <form id="scrape-form" class="scrape-form">
+          <div class="form-group">
+            <label for="category" class="form-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="label-icon">
+                <path d="M4 7h16M4 12h16M4 17h7" />
+              </svg>
+              Business Category
+            </label>
+            <input type="text" id="category" name="category" placeholder="e.g. Dentists, Restaurants, Plumbers..."
+              required class="form-input">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="state" class="form-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="label-icon">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <path d="M3 9h18" />
+                </svg>
+                State / Region
+              </label>
+              <input type="text" id="state" name="state" placeholder="e.g. California, Ontario..." required
+                class="form-input">
+            </div>
+            <div class="form-group">
+              <label for="country" class="form-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="label-icon">
+                  <circle cx="12" cy="12" r="10" />
+                  <path
+                    d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                </svg>
+                Country
+              </label>
+              <input type="text" id="country" name="country" placeholder="e.g. USA, Canada..." required
+                class="form-input">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="leads" class="form-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="label-icon">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              Number of Leads
+            </label>
+            <div class="leads-input-wrapper">
+              <input type="number" id="leads" name="leads" min="1" max="100" value="20" required class="form-input">
+              <span class="leads-hint">Max 100 leads per scrape</span>
+            </div>
+          </div>
+
+          <button type="submit" id="submit-btn" class="submit-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+            <span>Start Scraping</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Progress Section -->
+      <div class="progress-card hidden" id="progress-card">
+        <div class="progress-header">
+          <div class="progress-spinner">
+            <svg viewBox="0 0 50 50" class="spinner-svg">
+              <circle cx="25" cy="25" r="20" fill="none" stroke-width="4" />
+            </svg>
+          </div>
+          <h3 class="progress-title" id="progress-title">Scraping in Progress...</h3>
+          <p class="progress-message" id="progress-message">Initializing scraper...</p>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="progress-bar">
+            <div class="progress-bar-fill" id="progress-bar-fill"></div>
+          </div>
+          <span class="progress-percent" id="progress-percent">0%</span>
+        </div>
+        <div class="progress-details">
+          <div class="detail-item">
+            <span class="detail-label">Status</span>
+            <span class="detail-value" id="detail-status">Starting...</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Leads Found</span>
+            <span class="detail-value" id="detail-count">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results Section -->
+      <div class="results-card hidden" id="results-card">
+        <div class="results-header">
+          <div class="results-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+          </div>
+          <h3 class="results-title" id="results-title">Scraping Complete!</h3>
+          <p class="results-subtitle" id="results-subtitle">Found 0 verified business leads</p>
+        </div>
+
+        <div class="results-actions">
+          <button id="download-btn" class="download-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            <span>Download Excel File</span>
+          </button>
+          <button id="new-scrape-btn" class="new-scrape-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+              <polyline points="23 4 23 10 17 10" />
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+            </svg>
+            <span>New Scrape</span>
+          </button>
+        </div>
+
+        <!-- Results Preview Table -->
+        <div class="results-table-wrapper" id="results-table-wrapper">
+          <table class="results-table" id="results-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Business Name</th>
+                <th>Address</th>
+                <th>Phone</th>
+                <th>Website</th>
+              </tr>
+            </thead>
+            <tbody id="results-tbody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Error Section -->
+      <div class="error-card hidden" id="error-card">
+        <div class="error-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="15" y1="9" x2="9" y2="15" />
+            <line x1="9" y1="9" x2="15" y2="15" />
+          </svg>
+        </div>
+        <h3 class="error-title">Something went wrong</h3>
+        <p class="error-message" id="error-message">An error occurred while scraping.</p>
+        <button id="retry-btn" class="submit-btn" style="margin-top: 1rem;">
+          <span>Try Again</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-content">
+        <div class="footer-logo">
+          <div class="logo-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+          </div>
+          <span class="logo-text">Lead<span class="logo-accent">Scraper</span></span>
+        </div>
+        <p class="footer-text">Turn Google Maps into your lead machine. Fast, reliable, and easy to use.</p>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 LeadScraper. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
