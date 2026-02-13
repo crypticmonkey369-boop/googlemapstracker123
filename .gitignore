@@ -3,3 +3,4 @@ output/
 .env
 *.xlsx
 .DS_Store
+.vercel

@@ -3,7 +3,7 @@ services:
     name: googlemapstracker123
     runtime: node
     plan: free
-    buildCommand: ./render-build.sh
+    buildCommand: bash ./render-build.sh
     startCommand: npm start
     envVars:
       - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
