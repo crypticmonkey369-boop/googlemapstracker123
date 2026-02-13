@@ -64,29 +64,50 @@ async function scrapeGoogleMaps(category, state, country, maxLeads = 100, onProg
 
         onProgress({ status: 'scrolling', message: 'Loading business listings...' });
 
-        // Find the scrollable results panel
-        const scrollableSelector = 'div[role="feed"]';
-        await page.waitForSelector(scrollableSelector, { timeout: 15000 }).catch(() => null);
+        // Find the scrollable results panel - try multiple known selectors
+        const scrollableSelectors = [
+            'div[role="feed"]',
+            'div.m67qEc',
+            'div[aria-label^="Results for"]',
+            '.section-scrollbox'
+        ];
+
+        let scrollableSelector = null;
+        for (const selector of scrollableSelectors) {
+            const exists = await page.$(selector);
+            if (exists) {
+                scrollableSelector = selector;
+                break;
+            }
+        }
+
+        // Wait for results to load
+        if (scrollableSelector) {
+            await page.waitForSelector(scrollableSelector, { timeout: 15000 }).catch(() => null);
+        }
 
         // Scroll to load more results
         let previousCount = 0;
         let scrollAttempts = 0;
-        const maxScrollAttempts = 15;
+        const maxScrollAttempts = 20;
 
         while (scrollAttempts < maxScrollAttempts) {
-            // Scroll the results panel
+            // Scroll the results panel or the body if panel not found
             await page.evaluate((selector) => {
-                const el = document.querySelector(selector);
+                const el = selector ? document.querySelector(selector) : null;
                 if (el) {
                     el.scrollTop = el.scrollHeight;
+                } else {
+                    window.scrollBy(0, 500);
                 }
             }, scrollableSelector);
 
             await delay(2000 + Math.random() * 1000);
 
-            // Count current results
+            // Count current results - use a more robust selector for links
             const currentCount = await page.evaluate(() => {
-                return document.querySelectorAll('div[role="feed"] > div > div > a').length;
+                const links = document.querySelectorAll('a[href*="/maps/place/"]');
+                return Array.from(links).length;
             });
 
             onProgress({
@@ -101,7 +122,7 @@ async function scrapeGoogleMaps(category, state, country, maxLeads = 100, onProg
             // Check if we've stopped finding new results
             if (currentCount === previousCount) {
                 scrollAttempts++;
-                if (scrollAttempts >= 3) break;
+                if (scrollAttempts >= 5) break; // More attempts before giving up
             } else {
                 scrollAttempts = 0;
             }
@@ -111,7 +132,12 @@ async function scrapeGoogleMaps(category, state, country, maxLeads = 100, onProg
             // Check for "end of results" indicator
             const endOfResults = await page.evaluate(() => {
                 const text = document.body.innerText;
-                return text.includes("You've reached the end of the list");
+                const endphrases = [
+                    "You've reached the end of the list",
+                    "No more results",
+                    "End of the list"
+                ];
+                return endphrases.some(phrase => text.includes(phrase));
             });
 
             if (endOfResults) break;
@@ -121,12 +147,14 @@ async function scrapeGoogleMaps(category, state, country, maxLeads = 100, onProg
 
         // Get all listing links (capped at MAX_LEADS)
         let listingLinks = await page.evaluate(() => {
-            const links = document.querySelectorAll('div[role="feed"] > div > div > a');
-            return Array.from(links)
+            const items = document.querySelectorAll('a[href*="/maps/place/"]');
+            return Array.from(items)
                 .map((a) => a.href)
                 .filter((href) => href && href.includes('/maps/place/'));
         });
 
+        // Deduplicate links
+        listingLinks = [...new Set(listingLinks)];
         listingLinks = listingLinks.slice(0, MAX_LEADS);
 
         onProgress({
