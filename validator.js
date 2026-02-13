@@ -24,7 +24,7 @@ function removeDuplicates(businesses) {
  */
 function removeIncomplete(businesses) {
     return businesses.filter((biz) => {
-        return biz.name && biz.name.trim().length > 0 && biz.address && biz.address.trim().length > 0;
+        return biz.name && biz.name.trim().length > 0;
     });
 }
 

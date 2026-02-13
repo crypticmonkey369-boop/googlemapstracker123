@@ -71,6 +71,7 @@ async function scrapeGoogleMaps(category, state, country, maxLeads = 100, onProg
         let previousCount = 0;
         let scrollAttempts = 0;
         const maxScrollAttempts = 25;
+        let fastResults = [];
 
         while (scrollAttempts < maxScrollAttempts) {
             // Try scrolling the feed area
@@ -89,28 +90,49 @@ async function scrapeGoogleMaps(category, state, country, maxLeads = 100, onProg
 
             await delay(2500);
 
-            // Robust link extraction
-            const currentLinks = await page.evaluate(() => {
-                // Link patterns: search for anchors containing place info
-                const selectors = [
-                    'a[href*="/maps/place/"]',
-                    'a.hfpxzc',
-                    'div.Nv2Ybe a',
-                    '[role="article"] a'
-                ];
+            // Fast Extraction from List View (Captures data immediately)
+            const pageData = await page.evaluate((cat) => {
+                const results = [];
+                // Look for common business item containers in Maps
+                const items = document.querySelectorAll('div[role="article"], .Nv2Ybe, .m67qEc > div > div');
 
-                const links = new Set();
-                selectors.forEach(sel => {
-                    document.querySelectorAll(sel).forEach(a => {
-                        if (a.href && a.href.includes('/maps/place/')) {
-                            links.add(a.href);
-                        }
-                    });
+                items.forEach(item => {
+                    const link = item.querySelector('a[href*="/maps/place/"]');
+                    const nameEl = item.querySelector('.qBF1Pd') || item.querySelector('.fontHeadlineSmall');
+                    const name = nameEl ? nameEl.textContent.trim() : (item.getAttribute('aria-label') || '');
+
+                    if (link && name) {
+                        // Extract basic stats from the list view text labels
+                        const statsText = item.querySelector('.MW4etd')?.textContent || '';
+                        const reviewsText = item.querySelector('.UY7F9')?.textContent || '';
+
+                        // Address often appears in text blocks with specific classes
+                        const infoLines = Array.from(item.querySelectorAll('.W4Efsd')).map(el => el.textContent.trim());
+                        const address = infoLines[1] || '';
+
+                        results.push({
+                            category: cat,
+                            name: name,
+                            url: link.href,
+                            address: address,
+                            rating: statsText,
+                            reviews: reviewsText.replace(/[^0-9]/g, ''),
+                            phone: '',
+                            website: ''
+                        });
+                    }
                 });
-                return Array.from(links);
+                return results;
+            }, category);
+
+            // Merge unique found results
+            pageData.forEach(item => {
+                if (!fastResults.find(r => r.url === item.url)) {
+                    fastResults.push(item);
+                }
             });
 
-            const currentCount = currentLinks.length;
+            const currentCount = fastResults.length;
             onProgress({
                 status: 'scrolling',
                 message: `Found ${currentCount} business listings...`,
@@ -127,102 +149,80 @@ async function scrapeGoogleMaps(category, state, country, maxLeads = 100, onProg
             }
             previousCount = currentCount;
 
-            // Check if end reached
             const isEnd = await page.evaluate(() => {
-                return document.body.innerText.includes("reached the end") ||
-                    document.body.innerText.includes("No more results");
+                const bodyText = document.body.innerText;
+                return bodyText.includes("reached the end") || bodyText.includes("No more results");
             });
             if (isEnd) break;
         }
 
-        // Final Extraction Phase
-        let listingLinks = await page.evaluate(() => {
-            const links = new Set();
-            document.querySelectorAll('a[href*="/maps/place/"]').forEach(a => links.add(a.href));
-            return Array.from(links);
-        });
-
-        listingLinks = listingLinks.slice(0, MAX_LEADS);
+        // Final detail extraction (Optional but helpful for missing fields)
+        const listingLinks = fastResults.slice(0, MAX_LEADS);
 
         if (listingLinks.length === 0) {
-            throw new Error("Google Maps returned 0 results for this area. Try a broader category.");
+            throw new Error("No businesses found in this area. Please try a different category or broader location.");
         }
 
         onProgress({
             status: 'extracting',
-            message: `Extracting detailed info for ${listingLinks.length} businesses...`,
+            message: `Updating details for ${listingLinks.length} leads...`,
             total: listingLinks.length,
         });
 
+        const finalResults = [];
         for (let i = 0; i < listingLinks.length; i++) {
+            const currentItem = listingLinks[i];
             try {
                 onProgress({
                     status: 'extracting',
-                    message: `Detailing ${i + 1} of ${listingLinks.length}: ${listingLinks[i].split('/')[5]?.replace(/\+/g, ' ')}`,
+                    message: `Checking ${i + 1}/${listingLinks.length}: ${currentItem.name}`,
                     current: i + 1,
                     total: listingLinks.length,
                 });
 
-                await page.goto(listingLinks[i], { waitUntil: 'networkidle2', timeout: 30000 });
+                // Only visit detail page if we are missing critical info like phone or website
+                await page.goto(currentItem.url, { waitUntil: 'networkidle2', timeout: 30000 });
                 await delay(2000);
 
-                const businessData = await page.evaluate((cat) => {
-                    const data = {
-                        category: cat,
-                        name: document.querySelector('h1')?.textContent?.trim() || 'Unknown',
-                        address: '',
-                        phone: '',
-                        website: '',
-                        rating: '',
-                        reviews: '',
-                    };
-
-                    // Scrape Rating
-                    const ratingSpan = document.querySelector('span[role="img"][aria-label*="stars"]');
-                    if (ratingSpan) data.rating = ratingSpan.getAttribute('aria-label').split(' ')[0];
-
-                    // Scrape Reviews count
-                    const reviewsBtn = document.querySelector('button[aria-label*="reviews"]');
-                    if (reviewsBtn) data.reviews = reviewsBtn.getAttribute('aria-label').replace(/[^0-9]/g, '');
-
-                    // Helper to find data by icon/type
-                    const infoButtons = document.querySelectorAll('button[data-item-id]');
-                    infoButtons.forEach(btn => {
+                const details = await page.evaluate(() => {
+                    const d = { phone: '', website: '', address: '' };
+                    const btns = document.querySelectorAll('button[data-item-id]');
+                    btns.forEach(btn => {
                         const id = btn.getAttribute('data-item-id');
                         const label = btn.getAttribute('aria-label') || '';
-
-                        if (id?.includes('address')) data.address = label.replace('Address: ', '');
-                        if (id?.includes('phone')) data.phone = label.replace('Phone: ', '');
+                        if (id?.includes('phone')) d.phone = label.replace('Phone: ', '');
+                        if (id?.includes('address')) d.address = label.replace('Address: ', '');
                         if (id?.includes('authority')) {
-                            const link = btn.querySelector('a');
-                            if (link) data.website = link.href;
+                            const a = btn.querySelector('a');
+                            if (a) d.website = a.href;
                         }
                     });
-
-                    // Fallback for website
-                    if (!data.website) {
-                        const webLink = document.querySelector('a[data-item-id="authority"]');
-                        if (webLink) data.website = webLink.href;
+                    if (!d.website) {
+                        const w = document.querySelector('a[data-item-id="authority"]');
+                        if (w) d.website = w.href;
                     }
+                    return d;
+                });
 
-                    return data;
-                }, category);
-
-                if (businessData.name !== 'Unknown') {
-                    results.push(businessData);
-                }
+                finalResults.push({
+                    ...currentItem,
+                    phone: details.phone || currentItem.phone,
+                    website: details.website || currentItem.website,
+                    address: details.address || currentItem.address
+                });
             } catch (err) {
-                console.log(`Skip listing ${i}: ${err.message}`);
+                console.log(`Fallback for ${currentItem.name}: Using list data only.`);
+                finalResults.push(currentItem);
             }
         }
 
         onProgress({
             status: 'complete',
-            message: `Scraping finished! ${results.length} leads are ready.`,
-            count: results.length,
+            message: `Scraping complete! ${finalResults.length} leads found.`,
+            count: finalResults.length,
         });
 
-        return results;
+        return finalResults;
     } catch (error) {
         console.error('CRITICAL SCRAPING ERROR:', error.message);
         console.error('Stack:', error.stack);
