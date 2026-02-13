@@ -18,20 +18,30 @@ async function scrapeGoogleMaps(category, state, country, maxLeads = 20, onProgr
 
     let browser;
     try {
-        onProgress({ status: 'launching', message: 'Starting Stealth Engine...' });
+        onProgress({ status: 'launching', message: 'Initializing Stealth Scraper Engine...' });
 
-        browser = await puppeteer.launch({
-            headless: true,
-            timeout: 90000,
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-blink-features=AutomationControlled',
-                '--window-size=1920,1080',
-                '--lang=en-US,en;q=0.9',
-            ],
-        });
+        console.log('--- Launch Debug Info ---');
+        console.log('CWD:', process.cwd());
+        console.log('PUPPETEER_CACHE_DIR:', process.env.PUPPETEER_CACHE_DIR);
+
+        try {
+            browser = await puppeteer.launch({
+                headless: true,
+                timeout: 90000,
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-blink-features=AutomationControlled',
+                    '--window-size=1920,1080',
+                    '--lang=en-US,en;q=0.9',
+                ],
+            });
+        } catch (launchErr) {
+            console.error('Initial launch failed. Details:', launchErr.message);
+            // Fallback: Try to find executable manually if needed
+            throw launchErr;
+        }
 
         const page = await browser.newPage();
         await page.setViewport({ width: 1920, height: 1080 });

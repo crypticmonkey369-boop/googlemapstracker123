@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "build": "bash ./render-build.sh"
+    "build": "npm install && npx puppeteer install"
   },
   "dependencies": {
     "cors": "^2.8.5",
