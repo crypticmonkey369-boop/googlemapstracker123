@@ -27,12 +27,14 @@ async function scrapeGoogleMaps(category, state, country, maxLeads = 20, onProgr
         try {
             browser = await puppeteer.launch({
                 headless: true,
-                timeout: 90000,
+                timeout: 120000,
                 args: [
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
                     '--disable-dev-shm-usage',
                     '--disable-blink-features=AutomationControlled',
+                    '--disable-accelerated-2d-canvas',
+                    '--disable-gpu',
                     '--window-size=1920,1080',
                     '--lang=en-US,en;q=0.9',
                 ],
