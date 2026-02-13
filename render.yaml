@@ -1,10 +1,5 @@
 services:
   - type: web
-    name: google-maps-scraper-app
-    runtime: node
+    name: google-maps-scraper-app-d4ly
+    runtime: docker
     plan: free
-    buildCommand: npm install && npx puppeteer install
-    startCommand: npm start
-    envVars:
-      - key: NODE_VERSION
-        value: 18.0.0

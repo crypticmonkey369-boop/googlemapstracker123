@@ -24,6 +24,7 @@ async function scrapeGoogleMaps(category, state, country, maxLeads = 100, onProg
         browser = await puppeteer.launch({
             headless: true,
             timeout: 60000,
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null,
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
