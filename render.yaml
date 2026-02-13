@@ -3,7 +3,7 @@ services:
     name: google-maps-scraper-app-d4ly
     runtime: node
     plan: free
-    buildCommand: npm install && npx puppeteer install
+    buildCommand: npm run build
     startCommand: npm start
     envVars:
       - key: PUPPETEER_CACHE_DIR
